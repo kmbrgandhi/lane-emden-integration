@@ -195,12 +195,7 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	Z = zin - zout
 	return Y, Z
 
-# Use our methods to find the surface and surface derivatives for different values of n!
-lst_of_n = [0, 1, 1.5, 2, 3, 4]
-for i in lst_of_n:
-	print(i)
-	runge_ketta_shooting_direct(i, fy, fz)
-	fitting_method(i, fy, fz)
+
 
 #lst_x, lst_y, lst_z, surface, surface_derivative = fitting_method(1.0, fy, fz)
 #pressure_lst = []
