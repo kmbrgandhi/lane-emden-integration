@@ -1,6 +1,16 @@
 import numpy as np
 
-def rK3(x, y, z, f1, f2, hs, n):
+"""
+Perform Runge ketta shooting
+@param x the independent variable
+@param y the first dependent variable being solved for
+@param z the second dependent variable being solved for
+@param f1 how to evaluate y'
+@param f2 how to evaluate z'
+@param hs the step size
+@param n the polytropic index
+"""
+def rungeKetta(x, y, z, f1, f2, hs, n):
 	k1 = f1(x, y, z) * hs
 	l1 = f2(x, y, z, n) * hs
 	k2 = f1(x + (hs/2), y + (k1/2), z + (l1/2)) * hs
@@ -14,27 +24,52 @@ def rK3(x, y, z, f1, f2, hs, n):
 	x = x + hs
 	return x, y, z
 
+"""
+A particular fy, corresponding to the lane emden equation
+@param x the independent variable, a proxy for radius
+@param y the first dependent variable being solved for, a proxy for density
+@param z the second dependent variable being solved for, a proxy for y'
+@return y'
+"""
 def fy(x, y, z):
 	return z
-
+"""
+A particular fz, corresonding to the lane emden equation.
+Same specs as above
+@param n: the polytropic index
+@return z' at these particular x, y, z and polytropic index
+"""
 def fz(x, y, z, n = 1.5):
 	if x==0:
 		return -0.33333333
 	else:
 		return -(abs(y)**(n)) - 2 * (z/x)
 
+"""
+Compute initial values of y, y' at a particular value, using the taylor expansion of the lane emden solution around 0
+@param small_x the value of x
+@param n the polytropic index
+@return y, z for this x, n
+"""
 def init_computation(small_x, n):
 	y = 1 - 1.6 * small_x**(2) + n/120. * small_x**(4) - (n * (8*n-5)/15120.) * small_x**(6)
 	z = -2*1.6 * small_x**(2) + 4*n/120. * small_x**(3) - 6 * (n * (8*n -5)/15120. * small_x**(5))
 	return y, z
 
-def lane_emden_shooting_direct(n, f1, f2):
+"""
+Perform direct runge_ketta shooting for a particular polytropic index, as well as y', z' functions
+@param n the polytropic index
+@param f1 how to evaluate y'
+@param f2 how to evaluate z'
+@return nothing
+"""
+def runge_ketta_shooting_direct(n, f1, f2):
 	small_x= 0.001
 	y, z = init_computation(small_x, n)
 	x = small_x
 	hs = 0.025
 	for i in range(10000):
-		x, y, z = rK3(x, y, z, f1, f2, hs, n)
+		x, y, z = rungeKetta(x, y, z, f1, f2, hs, n)
 		if abs(y) < 2*hs and hs>0.000001:
 			hs = hs/2
 		if y<0.000000001:
@@ -42,15 +77,28 @@ def lane_emden_shooting_direct(n, f1, f2):
 	print("Surface at: ", x)
 	print("Surface Derivative: ", z)
 
-lst_of_n = [0, 1, 1.5, 2, 3, 4]
 
 
+"""
+Solve a linear system of equations
+@param Y, Z the RHS of the system
+@param dYdx, dYdz the coefficients of ∆x and ∆z in the first equation
+@param dZdx, dZz the coefficients of ∆x and ∆z in the second equation
+@return ∆x and ∆z that solve the equation
+"""
 def solve_equation(Y, Z, dYdx, dZdx, dYdz, dZdz):
 	a = np.array([[dYdx, dYdz], [dZdx, dZdz]])
 	b = np.array([Y, Z])
 	result = np.linalg.solve(a, b)
 	return result[0], result[1]
 
+"""
+Perform two-way fitting for a particular polytropic index, as well as y', z' functions
+@param n the polytropic index
+@param f1 how to evaluate y'
+@param f2 how to evaluate z'
+@return the final values of x, y, z, as well as the surface and surface derivative, in the final model found
+"""
 def fitting_method(n, f1, f2):
 	surface_guess = 3
 	if n==0:
@@ -87,6 +135,14 @@ def fitting_method(n, f1, f2):
 	print("Surface Derivative: ", surface_derivative)
 	return final_x, final_y, final_z, surface_guess, surface_derivative
 
+"""
+Helper function for the fitting method
+@param n the polytropic index
+@param surface_guess the current surface guess
+@param surface_derivative the current guess for the surface derivative
+@param f1, f2: how we evaluate y', z'
+@param lst_x, lst_y, lst_z lists to fill with the values of x, y, z that we get on this iteration of two-way shooting
+"""
 def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, lst_y, lst_z):
 	fitting_point = surface_guess/2.0
 	small_x = 0.001
@@ -99,13 +155,13 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	for j in range(10000):
 		if xout + hsout - fitting_point > -0.00000001:
 			hsout = fitting_point - xout
-			xout, yout, zout = rK3(xout, yout, zout, f1, f2, hsout, n)
+			xout, yout, zout = rungeKetta(xout, yout, zout, f1, f2, hsout, n)
 			lst_x.append(xout)
 			lst_y.append(yout)
 			lst_z.append(zout)
 			break
 		else:
-			xout, yout, zout = rK3(xout, yout, zout, f1, f2, hsout, n)
+			xout, yout, zout = rungeKetta(xout, yout, zout, f1, f2, hsout, n)
 			lst_x.append(xout)
 			lst_y.append(yout)
 			lst_z.append(zout)
@@ -122,10 +178,10 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	for i in range(10000):
 		if fitting_point - (xin + hsin) > -0.000000001:
 			hsin = fitting_point - xin
-			xin, yin, zin = rK3(xin, yin, zin, f1, f2, hsin, n)
+			xin, yin, zin = rungeKetta(xin, yin, zin, f1, f2, hsin, n)
 			break
 		else:
-			xin, yin, zin = rK3(xin, yin, zin, f1, f2, hsin, n)
+			xin, yin, zin = rungeKetta(xin, yin, zin, f1, f2, hsin, n)
 			to_reverse_x.append(xin)
 			to_reverse_y.append(yin)
 			to_reverse_z.append(zin)
@@ -139,12 +195,13 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	Z = zin - zout
 	return Y, Z
 
-
+# Use our methods to find the surface and surface derivatives for different values of n!
+lst_of_n = [0, 1, 1.5, 2, 3, 4]
 for i in lst_of_n:
 	print(i)
-	lane_emden_shooting_direct(i, fy, fz)
+	runge_ketta_shooting_direct(i, fy, fz)
 	fitting_method(i, fy, fz)
 
-lst_x, lst_y, lst_z, surface, surface_derivative = fitting_method(1.0, fy, fz)
-pressure_lst = []
+#lst_x, lst_y, lst_z, surface, surface_derivative = fitting_method(1.0, fy, fz)
+#pressure_lst = []
 
