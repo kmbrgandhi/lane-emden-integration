@@ -45,6 +45,7 @@ def fz(x, y, z, n = 1.5):
 	else:
 		return -(abs(y)**(n)) - 2 * (z/x)
 
+
 """
 Compute initial values of y, y' at a particular value, using the taylor expansion of the lane emden solution around 0
 @param small_x the value of x
@@ -93,7 +94,7 @@ def solve_equation(Y, Z, dYdx, dZdx, dYdz, dZdz):
 	return result[0], result[1]
 
 """
-Perform two-way fitting for a particular polytropic index, as well as y', z' functions
+Perform two-way fitting for the lane emden equation on a particular polytropic index, as well as y', z' functions
 @param n the polytropic index
 @param f1 how to evaluate y'
 @param f2 how to evaluate z'
