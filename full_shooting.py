@@ -35,7 +35,7 @@ def fy(x, y, z):
 	return z
 """
 A particular fz, corresonding to the lane emden equation.
-Same specs as above
+Same specs as fy
 @param n: the polytropic index
 @return z' at these particular x, y, z and polytropic index
 """
