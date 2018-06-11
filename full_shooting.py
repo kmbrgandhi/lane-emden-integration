@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 """
 Perform Runge ketta shooting
@@ -133,8 +134,8 @@ def fitting_method(n, f1, f2):
 	final_x = this_x
 	final_y = this_y
 	final_z = this_z
-	print("Surface at: ", surface_guess)
-	print("Surface Derivative: ", surface_derivative)
+	#print("Surface at: ", surface_guess)
+	#print("Surface Derivative: ", surface_derivative)
 	return final_x, final_y, final_z, surface_guess, surface_derivative
 
 """
@@ -198,9 +199,9 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	return Y, Z
 
 def get_information_polytrope(n = 2.0, rho_c = 100000.0, K = 100000.0, G = 6.67 * 10**(-11)):
-	lst_xi, lst_theta, lst_theta_deriv, surface, surface_derivative = fitting_method(1.0, fy, fz)
+	lst_xi, lst_theta, lst_theta_deriv, surface, surface_derivative = fitting_method(n, fy, fz)
 	P_c = K * rho_c**(1 + (1./n))
-	r_n = (n+1) * P_c**(2)/(4 * math.pi * G * rho_c**(2))
+	r_n = ((n+1) * (P_c)/(4 * math.pi * G * rho_c**(2)))**(0.5)
 	surface_real = surface * r_n
 	lst_R = [lst_xi[i] * r_n for i in range(len(lst_xi))]
 	lst_rho = [lst_theta[i]**(n) * rho_c for i in range(len(lst_theta))]
@@ -209,6 +210,12 @@ def get_information_polytrope(n = 2.0, rho_c = 100000.0, K = 100000.0, G = 6.67 
 	total_mass = -4 * math.pi * r_n**(3) * rho_c * surface**(2) * surface_derivative
 	return [P_c, r_n, rho_c, K, G, surface_real, total_mass, lst_R, lst_rho, lst_P, lst_M]
 
-#lst_x, lst_y, lst_z, surface, surface_derivative = fitting_method(1.0, fy, fz)
-#pressure_lst = []
+info = get_information_polytrope(n=1.0)
+lst_R = info[7]
+lst_rho = info[8]
+lst_P = info[9]
+lst_M = info[10]
+plt.plot(lst_R, lst_rho)
+#plt.show()
+
 
