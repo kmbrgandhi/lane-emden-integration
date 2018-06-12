@@ -43,4 +43,3 @@ def test_interpolating():
 	print("should be: ", (5./6) * 3 + (1./6) * 7)
 	print(evaluate_background(background, values, 0.8))
 	print("should be: ", 0.8 * 2 + 0.2 * 7)
-test_interpolating()
