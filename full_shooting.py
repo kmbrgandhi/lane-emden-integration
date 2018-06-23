@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from interpolating import evaluate_background
 
 """
 Perform Runge ketta shooting
@@ -198,19 +199,21 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	Z = zin - zout
 	return Y, Z
 
-def get_information_polytrope(n = 2.0, rho_c = 100000.0, K = 100000.0, G = 6.67 * 10**(-11)):
+def get_information_polytrope(n = 3.0, totalmass = 1.989 * 10**(33), radius = 6.95508 * 10**(10), G = 6.674 * 10**(-8)):
 	lst_xi, lst_theta, lst_theta_deriv, surface, surface_derivative = fitting_method(n, fy, fz)
-	P_c = K * rho_c**(1 + (1./n))
-	r_n = ((n+1) * (P_c)/(4 * math.pi * G * rho_c**(2)))**(0.5)
-	surface_real = surface * r_n
-	print(surface_real)
+	r_n = radius/(surface)
+	P_c = (1/(4 * math.pi * (n + 1) * surface_derivative**(2)))* G*totalmass**(2) * radius**(-4)
+	rho_c = -totalmass * radius**(-3) * (surface/(4 * math.pi * surface_derivative))
 	lst_R = [lst_xi[i] * r_n for i in range(len(lst_xi))]
 	lst_rho = [lst_theta[i]**(n) * rho_c for i in range(len(lst_theta))]
+	Kfirst = ((4 * math.pi)/(surface**(n + 1) * (-surface_derivative)**(n - 1)))**(1./n)
+	K = Kfirst * G * (1./(n + 1)) * totalmass**(1 - (1./n)) * radius**(-1 + (3./n))
 	lst_P = [P_c * lst_theta[i]**(1+n) for i in range(len(lst_theta))]
 	lst_M = [-4 * math.pi * r_n**(3) * rho_c * lst_xi[i]**(2) * lst_theta_deriv[i] for i in range(len(lst_xi))]
-	total_mass = -4 * math.pi * r_n**(3) * rho_c * surface**(2) * surface_derivative
-	return [P_c, r_n, rho_c, K, G, surface_real, total_mass, lst_R, lst_rho, lst_P, lst_M]
 
+	return [P_c, r_n, rho_c, K, G, radius, totalmass, lst_R, lst_rho, lst_P, lst_M]
+
+get_information_polytrope()
 """
 info = get_information_polytrope(n=1.0)
 lst_R = info[7]
