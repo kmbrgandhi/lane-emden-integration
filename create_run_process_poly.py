@@ -53,3 +53,6 @@ results_g = [(ns[i], angular_frequency * freqs[i][0]) for i in range(len(freqs))
 print(results_g)
 
 os.system('rm poly.h5')
+os.system('rm -r $GYRE_DIR/' + folder_name + 'g' + str(x))
+os.system('rm -r $GYRE_DIR/' + folder_name + 'p' + str(x))
+
