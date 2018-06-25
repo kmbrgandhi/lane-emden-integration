@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from interpolating import evaluate_background
+import h5py
 
 """
 Perform Runge ketta shooting
@@ -153,10 +154,11 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	yout, zout = init_computation(small_x, n)
 	xout = small_x
 	hsout = 0.001
-	lst_x.append(xout)
+	lst_x.append(0)
 	lst_y.append(yout)
 	lst_z.append(zout)
-	for j in range(10000):
+	num_steps = 10000
+	for j in range(num_steps):
 		if xout + hsout - fitting_point > -0.00000001:
 			hsout = fitting_point - xout
 			xout, yout, zout = rungeKetta(xout, yout, zout, f1, f2, hsout, n)
@@ -179,7 +181,7 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	to_reverse_x.append(xin)
 	to_reverse_y.append(yin)
 	to_reverse_z.append(zin)
-	for i in range(10000):
+	for i in range(num_steps):
 		if fitting_point - (xin + hsin) > -0.000000001:
 			hsin = fitting_point - xin
 			xin, yin, zin = rungeKetta(xin, yin, zin, f1, f2, hsin, n)
@@ -198,6 +200,26 @@ def fitting_method_subpart(n, surface_guess, surface_derivative, f1, f2, lst_x, 
 	Y = yin - yout
 	Z = zin - zout
 	return Y, Z
+
+
+def generate_polytrope_file(n, filename, Gamma_1):
+	lst_xi, lst_theta, lst_theta_deriv, surface, surface_derivative = fitting_method(n, fy, fz)
+	f_lst_xi = np.array(lst_xi)
+	f_lst_theta = np.array(lst_theta)
+	f_lst_theta_deriv = np.array(lst_theta_deriv)
+	f = h5py.File(filename)
+	f.create_dataset("Theta", data = f_lst_theta)
+	f.create_dataset("dTheta", data = f_lst_theta_deriv)
+	f.create_dataset("xi", data = f_lst_xi)
+	polytropic_index = np.array([n])
+	f.attrs.__setitem__("n", len(lst_theta))
+	f.attrs.__setitem__("n_d", 0)
+	f.attrs.__setitem__("n_poly", polytropic_index)
+	f.attrs.__setitem__("Gamma_1", Gamma_1)
+
+	f.close()
+
+
 
 def get_information_polytrope(n = 3.0, totalmass = 1.989 * 10**(33), radius = 6.95508 * 10**(10), G = 6.674 * 10**(-8)):
 	lst_xi, lst_theta, lst_theta_deriv, surface, surface_derivative = fitting_method(n, fy, fz)
