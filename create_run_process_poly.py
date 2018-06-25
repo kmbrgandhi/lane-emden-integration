@@ -24,20 +24,20 @@ def build_poly (n_poly, Delta_d, xi_d, Gamma_1, dxi, toler, filename):
 
     f.write('''
 &poly
-	n_d = {0:d}
-	n_poly = {1:s}
+    n_d = {0:d}
+    n_poly = {1:s}
         Delta_d = {2:s}
         xi_d = {3:s}
         Gamma_1 = {4:24.16e}
 /
 
 &num
-	dxi = {5:24.16e}
-	toler = {6:24.16e}
+    dxi = {5:24.16e}
+    toler = {6:24.16e}
 /
 
 &out
-	filename = '{7:s}'
+    filename = '{7:s}'
 /
 '''.format(len(n_poly)-1, n_poly_str, Delta_d_str, xi_d_str,
            Gamma_1, dxi, toler, filename))
@@ -47,7 +47,7 @@ def build_poly (n_poly, Delta_d, xi_d, Gamma_1, dxi, toler, filename):
     # Run build_poly
     
 
-    os.system('/Users/kmbrgandhi/gyre/src/poly/build_poly.fpp {0:s}'.format(infile))
+    os.system('/Users/kmbrgandhi/gyre/bin/build_poly {0:s}'.format(infile))
 
     # Delete the input file
 
