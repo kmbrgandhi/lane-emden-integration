@@ -16,10 +16,6 @@ Gamma_1 = 1.66666666666666667
 generate_polytrope_file(n, poly_file_name, Gamma_1)
 # could also use build_poly, which is now present, here
 
-
-
-
-
 x = random.randint(1, 100)
 # now make the work directory, process p modes first
 p_path = '$GYRE_DIR/' + folder_name + 'p' + str(x)
