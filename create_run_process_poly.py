@@ -8,8 +8,70 @@ import random
 import tempfile as tf
 from full_shooting import generate_polytrope_file
 
+def make_poly_in(l, n_pg_min, n_pg_max, freq_min, freq_max, grid_type, n_freq):
+	fd, infile = tf.mkstemp()
+	filename = "gyre.in"
+	f = os.fdopen(fd, 'w')
+	f.write('''
+&constants
+/
+
+&model
+	model_type = 'POLY'  ! Obtain stellar structure from an evolutionary model
+	file = 'poly.h5'    ! File name of the evolutionary model
+/
+
+&mode
+	    l = %d                ! Harmonic degree
+        n_pg_min = %d
+        n_pg_max = %d
+/
+
+&osc
+        outer_bound = 'VACUUM' ! Use a zero-pressure outer mechanical boundary condition
+/
+
+&num
+	diff_scheme = 'COLLOC_GL4' ! 4th-order collocation scheme for difference equations
+/
+
+&scan
+        grid_type = %s ! Scan for modes using a uniform-in-period grid; best for g modes
+        freq_min = %d        ! Minimum frequency to scan from
+	freq_max = %d        ! Maximum frequency to scan to
+	n_freq = %d          ! Number of frequency points in scan
+/
+
+&grid
+	alpha_osc = 10  ! Ensure at least 10 points per wavelength in propagation regions
+	alpha_exp = 2   ! Ensure at least 2 points per scale length in evanescent regions
+	n_inner = 5     ! Ensure at least 5 points between center and inner turning point
+/
+
+
+&ad_output
+        summary_file = 'summary.hdf5'                            ! File name for summary file
+        summary_item_list = 'l,n_pg,omega,E_norm' ! Items to appear in summary file
+        mode_template = 'mode.hdf5'                		! File-name template for mode files
+        mode_item_list = 'l,n_pg,omega,x,xi_r,xi_h'   		! Items to appear in mode files
+/
+
+&nad_output
+/
+'''.format(l, n_pg_min, n_pg_max, grid_type, freq_min, freq_max, n_freq))	
+	f.close()
+	return infile
+
+
+
+
 n = float(sys.argv[1])
+#l = int(sys.argv[2])
 folder_name = sys.argv[2]
+
+
+fg = make_poly_in(2, -50, -1, 'INVERSE', 0.1, 3, 250)
+fp = make_poly_in(2, 1, 35, 'LINEAR', 1, 100, 250)
 
 poly_file_name = "poly.h5"
 Gamma_1 = 1.66666666666666667
