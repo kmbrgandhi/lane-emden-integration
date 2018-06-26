@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from interpolating import evaluate_background
 import h5py
 
+
+
 """
 Perform Runge ketta shooting
 @param x the independent variable
@@ -27,6 +29,9 @@ def rungeKetta(x, y, z, f1, f2, hs, n):
 	z = z + l1/6 + l2/3 + l3/3 + l4/6
 	x = x + hs
 	return x, y, z
+
+
+
 
 """
 A particular fy, corresponding to the lane emden equation
@@ -60,6 +65,9 @@ def init_computation(small_x, n):
 	y = 1 - 1.6 * small_x**(2) + n/120. * small_x**(4) - (n * (8*n-5)/15120.) * small_x**(6)
 	z = -2*1.6 * small_x**(2) + 4*n/120. * small_x**(3) - 6 * (n * (8*n -5)/15120. * small_x**(5))
 	return y, z
+
+
+
 
 """
 Perform direct runge_ketta shooting for a particular polytropic index, as well as y', z' functions
