@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -243,7 +244,7 @@ def get_information_polytrope(n = 3.0, totalmass = 1.989 * 10**(33), radius = 6.
 
 	return [P_c, r_n, rho_c, K, G, radius, totalmass, lst_R, lst_rho, lst_P, lst_M]
 
-get_information_polytrope()
+#get_information_polytrope()
 """
 info = get_information_polytrope(n=1.0)
 lst_R = info[7]
