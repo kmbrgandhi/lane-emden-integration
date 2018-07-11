@@ -1,30 +1,86 @@
 import numpy as np
 import math
 from full_shooting import rungeKetta
+from pynverse import inversefunc
+import scipy
 
 
 gamma = 1.84
 c = 2.998 * 10**(10)
+cfm = 2.998*10**(23)
 G = 6.674 * 10**(-8)
 K = 10**(7.36)
 h = 6.62606885 * 10**(-27)
 hbar = 1.0545716 * 10**(-27)
-skyrme_params = [-0.95, -5.78, -1.29, -1.56, -1913.6, 439.8, 2697.6, 10592, 0.25]
-# this is SkI1
+skyrme_params = [0.45, 0, 0, 1, -1128.75, 395.00, -95.00, 14000, 1]
+# this is SII
+hbarc = 197.32705 # MeV fm
 
 mass_neutron = 1.674929 * 10**(-24)
 mass_proton = 1.672623 * 10**(-24)
 mass_muon = 1.8835327 * 10**(-25)
+mass_muon_mev = 105.7
+mean_mass = 938.91897 # MeV
 
-def use_neutrality_complex(n):
-	return 0
+def asymmetry(n, skyrme_params):
+	sp = skyrme_params
+	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
+	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
+	term1 = 1./3 * hbarc**(2)/(2 * mean_mass) * (1.5 * math.pi * math.pi)**(2./3) * n**(2./3)
+	term2 = -0.125 * t0 * (2 * x0 + 1) * n
+	term3 = -(1./24) * (1.5 * math.pi * math.pi)**(2./3) * (3 * t1 * x1 - t2 * (5*x2 + 4))* n**(5./3)
+	term4 = -(1./48) * t3*(2*x3 + 1) * n**(alpha + 1)
+	return term1 + term2 + term3 + term4
+	
+def get_xp_eq(n):
+	def xp_eq(xp):
+		value = xp**(1./3) * (hbarc* (3 * math.pi**(2) * n)**(1./3))
+		value2 = 4 * asymmetry(n, skyrme_params) * (1 - 2*xp)
+		return (value - value2)
+	return xp_eq
+
+def get_xmu_eq(n):
+	def xmu_eq(xmu):
+		internalterm = (mass_muon_mev/hbarc)**(2) * 1./((3 * math.pi * math.pi *n)**(2./3))
+		internalterm = internalterm + xmu**(2./3)
+		lhs = (1 - 2*xmu - 2 * (internalterm)**(1.5)) * 4 * asymmetry(n, skyrme_params)
+		rhsinternal = mass_muon_mev**(2) + hbarc**(2) * (3 * math.pi * math.pi *n)**(2/3) * xmu**(2./3)
+		rhs = rhsinternal**(0.5)
+		return rhs - lhs
+	return xmu_eq
 
 def use_neutrality_simple(n):
-	return 0
+	xp_function = get_xp_eq(n)
+	value = scipy.optimize.brenth(xp_function, 0, 1)
+	return value
 
 
-def extract_n_pressure(P):
-	return 0
+def use_neutrality_complex(n):
+	xmu_function = get_xmu_eq(n)
+
+	value = scipy.optimize.brenth(xmu_function, 0, 1)
+	return value
+
+def get_I(n):
+	x_p = use_neutrality_simple(n)
+	return 1 - 2*x_p
+
+def get_I_complex(n):
+	try:
+		x_mu = use_neutrality_complex(n)
+		term1 = (mass_muon_mev/hbarc)**(2) * 1/((3 * math.pi * math.pi * n)**(2./3))
+		x_e = (term1 + x_mu**(2./3))**(1.5)
+		x_p = x_e + x_mu
+		return 1 - 2*x_p
+	except:
+		print('badddddd')
+		return get_I(n)
+
+def extract_n_pressure(Pval):
+	def desired_fn(n):
+		return P(n, skyrme_params) - Pval
+	value = scipy.optimize.brenth(desired_fn, 0, 100)
+	return value
 
 def getrho(P):
 	value_n = extract_n_pressure(P)
@@ -36,48 +92,16 @@ def dMSkyrme(r, P, M, n):
 def dPSkyrme(r, P, M, n):
 	return G* (P/c**(2) + getrho(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
 
-def dM(r, rho, M, n):
-	return 4 * math.pi * r**(2) * rho
-
-def getPpoly(rho, gamma):
-	return K * abs(rho)**(gamma)
-
-def drhoPoly(r, rho, M):
-	if rho <=0: 
-		return 0
-	value = -K**(-1) * abs(rho)**(1 - gamma) * gamma**(-1) * G* (rho + (getPpoly(rho, gamma)/(c**(2))))* ((M + 4 * math.pi * r**(3) * (getPpoly(rho, gamma)/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
-	return value
-
-def asymmetry(n, skyrme_params):
-	sp = skyrme_params
-	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
-	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 1/3 * hbar**(2)/(2 * mass_neutron) * (1.5 * math.pi * math.pi)**(2./3) * n**(2./3)
-	term2 = 0.125 * t0 * (2 * x0 + 1) * n
-	term3 = -(1./24) * (1.5 * math.pi * math.pi)**(2./3) * (3 * t1 * x1 - t2 * (5*x2 + 4))* n**(5./3)
-	term4 = -(1./48) * t3*(2*x3 + 1) * n**(alpha + 1)
-	return term1 + term2 + term3 + term4
-
 def F(m, I):
 	return (0.5 * (1 + I)**(m) + 0.5 * (1-I)**(m))
 
-def get_I_complex(n):
-	x_mu = use_neutrality_complex(n)
-	term1 = (mass_muon * c/hbar)**(2) * 1/((3 * math.pi * math.pi * n)**(2./3))
-	x_e = (term1 + x_mu**(2./3))**(1.5)
-	x_p = x_e + x_mu
-	return 1 - 2*x_p
-
-def get_I(n):
-	x_p = use_neutrality_simple(n)
-	return 1 - 2*x_p
 
 def E(n, skyrme_params):
 	I = get_I(n)
 	sp = skyrme_params
 	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
 	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 0.6 * hbar**(2)/(2 * mass_neutron)*(1.5 * math.pi * math.pi)**(2./3) * n**(2./3) * F(5./3, I)
+	term1 = 0.6 * hbarc**(2)/(2 * mean_mass)*(1.5 * math.pi * math.pi)**(2./3) * n**(2./3) * F(5./3, I)
 	term2 = 0.125 * t0 * n * (2*(x0 + 2) - (2*x0 + 1)*F(2, I))
 	term3 = (1./48) * t3 * n**(alpha + 1) * (2*(x3 + 2) - (2*x3 + 1)*F(2, I))
 	multiplicand = (t1*(x1 + 2) + t2*(x2 + 2))*F(5./3, I) + 0.5*(t2*(2*x2 + 1)-t1*(2*x1 + 1)) * F(8./3, I)
@@ -89,7 +113,7 @@ def P(n, skyrme_params):
 	sp = skyrme_params
 	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
 	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 0.4 * hbar**(2)/(2 * mass_neutron)*(1.5 * math.pi * math.pi)**(2./3) * n**(5./3) * F(5./3, I)
+	term1 = 0.4 * hbarc**(2)/(2 * mean_mass)*(1.5 * math.pi * math.pi)**(2./3) * n**(5./3) * F(5./3, I)
 	term2 = 0.125 * t0 * n**(2) * (2*(x0 + 2) - (2*x0 + 1)*F(2, I))
 	term3 = ((alpha + 1)/48) * t3 * n**(alpha + 2) * (2*(x3 + 2) - (2*x3 + 1)*F(2, I))
 	multiplicand = (t1*(x1 + 2) + t2*(x2 + 2))*F(5./3, I) + 0.5*(t2*(2*x2 + 1)-t1*(2*x1 + 1)) * F(8./3, I)
@@ -101,7 +125,7 @@ def dPdn(n, skyrme_params):
 	sp = skyrme_params
 	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
 	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 2./3 * hbar**(2)/(2 * mass_neutron)*(1.5 * math.pi * math.pi)**(2./3) * n**(2./3) * F(5./3, I)
+	term1 = 2./3 * hbarc**(2)/(2 * mean_mass)*(1.5 * math.pi * math.pi)**(2./3) * n**(2./3) * F(5./3, I)
 	term2 = 0.25 * t0 * n * (2*(x0 + 2) - (2*x0 + 1)*F(2, I))
 	term3 = (((alpha + 1)*(alpha+2))/48) * t3 * n**(alpha + 1) * (2*(x3 + 2) - (2*x3 + 1)*F(2, I))
 	multiplicand = (t1*(x1 + 2) + t2*(x2 + 2))*F(5./3, I) + 0.5*(t2*(2*x2 + 1)-t1*(2*x1 + 1)) * F(8./3, I)
@@ -110,16 +134,7 @@ def dPdn(n, skyrme_params):
 
 def rho(n, skyrme_params):
 	I = get_I(n)
-	n_p = n* 0.5 * (1 - I)
-	n_n = n* 0.5 * (1 + I)
-	epsilon = E(n, skyrme_params) + c**(2) * (n_n * mass_neutron + n_p * mass_proton)
-	return epsilon/c**(2)
-
-def depdn(n, skyrme_params):
-	return mass_neutron * c**(2) + E(n, skyrme_params) + P(n, skyrme_params)/n
-
-value = dPdn(0.161, skyrme_params)/(depdn(0.161, skyrme_params))
-print(value)
+	return (n * (mean_mass + E))/(c**(2))
 
 def shooting_skyrme(central_pressure):
 	small_x = 0.00001
@@ -142,6 +157,19 @@ def shooting_skyrme(central_pressure):
 	print("Surface at: ", x)
 	print("Total mass: ", z)
 
+
+
+
+def dM(r, rho, M, n):
+	return 4 * math.pi * r**(2) * rho
+def getPpoly(rho, gamma):
+	return K * abs(rho)**(gamma)
+
+def drhoPoly(r, rho, M):
+	if rho <=0: 
+		return 0
+	value = -K**(-1) * abs(rho)**(1 - gamma) * gamma**(-1) * G* (rho + (getPpoly(rho, gamma)/(c**(2))))* ((M + 4 * math.pi * r**(3) * (getPpoly(rho, gamma)/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
+	return value
 """
 Perform direct runge_ketta shooting for a particular polytropic index, as well as y', z' functions
 @param n the polytropic index
@@ -169,6 +197,7 @@ def shooting_direct(central_density, f1, f2):
 			break
 	print("Surface at: ", x)
 	print("Total mass: ", z)
+
 
 
 
