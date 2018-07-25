@@ -202,6 +202,30 @@ def dM(r, rho, M, n):
 def getPpoly(rho, gamma):
 	return K * abs(rho)**(gamma)
 
+
+def getRhoBSM(P, interp = 1.5):
+	if (P-eos_P[0] < 0.01) or (P - eos_P[-1] > -0.01):
+		raise ValueError('A very specific bad thing happened.')
+	else:
+		for i in range(len(eos_P)):
+			if abs(eos_P[i] - P) < 0.1:
+				return eos_P[i]
+
+		first_greater = 0
+		for i in range(len(eos_P)):
+			if eos_P[i] > P:
+				first_greater = i
+				break
+
+		index_1 = first_greater - 1
+		index_2 = first_greater
+		diff = eos_P[index_2] - eos_P[index_1]
+		weight_1 = (eos_P[index_2] - P)/diff
+		weight_2 = (P - eos_P[index_1])/diff
+		return ((weight_1 * eos_rho[index_1]) + (weight_2 * eos_rho[index_2]))
+
+
+
 def getRhoPoly(P):
 	if P<0:
 		return 0
@@ -232,20 +256,37 @@ def dMSkyrme(r, P, M, n):
 	try:
 		value = getrho(P)
 
-		if getrho(P) > 5*10**(13):
+		if getrho(P) > 3*10**(14):
 			return 4 * math.pi * r**(2) * getrho(P)
 		else:
-			return 4 * math.pi * r**(2) * getRhoPoly(P)
+			try:
+				print(M/mass_sun)
+				return 4 * math.pi * r**(2) * getRhoBSM(P)
+			except: 
+				return 4 * math.pi * r**(2) * getRhoPoly(P)
 	except:
-		return 4 * math.pi * r**(2) * getRhoPoly(P)
+		try:
+			print(M/mass_sun)
+			return 4 * math.pi * r**(2) * getRhoBSM(P)
+		except:
+			return 4 * math.pi * r**(2) * getRhoPoly(P)
 
 def dPSkyrme(r, P, M):
 	if P==0:
 		return -2.0*10**(29)
 	try:
-		return -G* (P/c**(2) + getrho(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
+		if getrho(P) > 3*10**(14):
+			return -G* (P/c**(2) + getrho(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
+		else:
+			try:
+				return -G* (P/c**(2) + getRhoBSM(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
+			except: 
+				return -G* (P/c**(2) + getRhoPoly(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
 	except Exception as e:
-		return -G* (P/c**(2) + getRhoPoly(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
+		try:
+			return -G* (P/c**(2) + getRhoBSM(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
+		except:
+			return -G* (P/c**(2) + getRhoPoly(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
 
 def F(m, I):
 	return (0.5 * (1 + I)**(m) + 0.5 * (1-I)**(m))
