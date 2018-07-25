@@ -260,13 +260,11 @@ def dMSkyrme(r, P, M, n):
 			return 4 * math.pi * r**(2) * getrho(P)
 		else:
 			try:
-				print(M/mass_sun)
 				return 4 * math.pi * r**(2) * getRhoBSM(P)
 			except: 
 				return 4 * math.pi * r**(2) * getRhoPoly(P)
 	except:
 		try:
-			print(M/mass_sun)
 			return 4 * math.pi * r**(2) * getRhoBSM(P)
 		except:
 			return 4 * math.pi * r**(2) * getRhoPoly(P)
@@ -353,7 +351,7 @@ def shooting_skyrme(central_pressure):
 	#print(y)
 	print("Surface at: ", x/(10**(5)))
 	print("Total mass: ", z/mass_sun)
-	return lst_n, lst_xp, lst_xe, lst_xmu, lst_xn
+	#return lst_n, lst_xp, lst_xe, lst_xmu, lst_xn
 	return [x/(10**(5)), z/mass_sun]
 	#return lst_x_brunt, lst_brunt, lst_x_logbrunt, lst_logbrunt
 
@@ -455,17 +453,17 @@ def fitting_method_subpart_skyrme(central_pressure, surface_guess, mass_guess, f
 	Z = zin - zout
 	return Y, Z
 
-skyrme_params = lst_params[0]
+#skyrme_params = lst_params[0]
 #print(asymmetry(0.158))
 #print(get_v_adiabatic(0.158)/c)
 #print(get_mean_mass(0.158))
 #shooting_skyrme(P(lst_central_14[0]) * conversion_pressure)
 #fitting_method_skyrme(P(lst_central_14[0]) * conversion_pressure)
-lst_n, lst_xp, lst_xe, lst_xmu, lst_xn = shooting_skyrme(P(lst_central_max[0]) * conversion_pressure)
-print("I'm here")
-plt.plot(lst_n, lst_xmu)
-plt.yscale('log')
-plt.show()
+#lst_n, lst_xp, lst_xe, lst_xmu, lst_xn = shooting_skyrme(P(lst_central_max[0]) * conversion_pressure)
+##print("I'm here")
+#plt.plot(lst_n, lst_xmu)
+#plt.yscale('log')
+#plt.show()
 #fitting_method_skyrme(P(lst_central_max[0]) * conversion_pressure)
 
 """
@@ -483,7 +481,7 @@ for i in range(len(lst_params)):
 	plt.ylabel('log Brunt (s^-1)')
 	plt.savefig('core_log' + names[i] + ".png")
 	plt.clf()
-
+"""
 
 
 
@@ -507,7 +505,7 @@ diff_radii = [round(-(radii[i] - correct_radii[i]), 2) for i in range(len(radii)
 diff_mass = [round(max_mass[i] - correct_masses[i], 2) for i in range(len(radii))]
 print(diff_radii)
 print(diff_mass)
-"""
+
 def shooting_direct(central_density, f1, f2):
 	small_x= 0.00001
 	y, z = central_density, 0
