@@ -7,28 +7,30 @@ import skyrme_group1
 import eos_bps
 
 
-gamma = 1.84
+# all values in CGS here
 c = 2.99792458* 10**(10)
-cfm = 2.998*10**(23)
 G = 6.67408 * 10**(-8)
 K = 10**(7.36)
 h = 6.62606885 * 10**(-27)
 hbar = 1.0545716 * 10**(-27)
-conversion_pressure = 1.6022 * 10**(33)
-conversion_density = 1.7827 * 10**(12)
 K_nr = ((1.004 * 10**(13))/(1.2**(5./3)))
 K_r = ((1.243 * 10**(15))/(1.2**(4./3)))
-hbarc = 197.3269631 # MeV fm
-try_hbaroverm = 20.7525
+mass_sun = 1.98847 * 10**(33)
 
-
+# all values are in MeV or associated units (MeV fm)
+hbarc = 197.3269631 # MeV
 amu_mass = 931.5
 mass_neutron = 938.27231
 mass_proton = 939.56563
-mass_muon = 1.8835327 * 10**(-25)
 mass_muon_mev = 105.6583715
+hbaroverm = hbarc**(2)/(2*amu_mass)
 
-mass_sun = 1.98847 * 10**(33)
+
+conversion_pressure = 1.6022 * 10**(33)
+conversion_density = 1.7827 * 10**(12)
+pi_multiplier= (1.5 * math.pi * math.pi)**(2./3)
+gamma = 1.84
+
 
 names, lst_params, lst_central_14, lst_central_max, correct_radii, correct_masses = skyrme_group1.get_skyrme_info()
 eos_rho, eos_P = eos_bps.get_eos_manual()
@@ -37,9 +39,9 @@ def asymmetry(n):
 	sp = skyrme_params
 	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
 	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 1./3 * try_hbaroverm * (1.5 * math.pi * math.pi)**(2./3) * n**(2./3)
+	term1 = 1./3 * hbaroverm* pi_multiplier * n**(2./3)
 	term2 = -0.125 * t0 * (2 * x0 + 1) * n
-	term3 = -(1./24) * (1.5 * math.pi * math.pi)**(2./3) * (3 * t1 * x1 - t2 * (5*x2 + 4))* n**(5./3)
+	term3 = -(1./24) * pi_multiplier * (3 * t1 * x1 - t2 * (5*x2 + 4))* n**(5./3)
 	term4 = -(1./48) * t3*(2*x3 + 1) * n**(alpha + 1)
 	return term1 + term2 + term3 + term4
 
@@ -57,7 +59,7 @@ def get_mean_mass(n):
 
 def get_xp_eq(n):
 	def xp_eq(xp):
-		value = xp**(1./3) * (hbarc* (3 * math.pi**(2) * n)**(1./3))
+		value = xp**(1./3) * (hbarc* (3 * math.pi*math.pi * n)**(1./3))
 		value2 = 4 * asymmetry(n) * (1 - 2*xp)
 		return (value - value2)
 	return xp_eq
@@ -104,51 +106,58 @@ def get_I(n, sc = False, no_errors = False):
 		return get_I_simple(n)
 def E(n):
 	I = get_I(n)
+	"""
 	x_p = 0.5 * (1-I)
 	x_n = 1 - x_p
 	real_mean_mass = x_p * mass_proton + x_n * mass_neutron
+	"""
 	sp = skyrme_params
 	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
 	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 0.6 * try_hbaroverm*(1.5 * math.pi * math.pi)**(2./3) * n**(2./3) * F(5./3, I)
+
+	term1 = 0.6 * hbaroverm*pi_multiplier * n**(2./3) * F(5./3, I)
 	term2 = 0.125 * t0 * n * (2*(x0 + 2) - (2*x0 + 1)*F(2, I))
 	term3 = (1./48) * t3 * n**(alpha + 1) * (2*(x3 + 2) - (2*x3 + 1)*F(2, I))
 	multiplicand = (t1*(x1 + 2) + t2*(x2 + 2))*F(5./3, I) + 0.5*(t2*(2*x2 + 1)-t1*(2*x1 + 1)) * F(8./3, I)
-	term4 = (3./40) * (1.5 * math.pi * math.pi)**(2./3) * n**(5./3) * multiplicand
+	term4 = (3./40) * pi_multiplier * n**(5./3) * multiplicand
 	return term1 + term2 + term3 + term4
 
 def P(n, no_errors = False):
 	I = get_I(n, no_errors = no_errors)
+	"""
 	x_p = 0.5 * (1-I)
 	x_n = 1 - x_p
 	n_p = n*x_p
 	n_n = n* x_n
 	real_mean_mass = x_p * mass_proton + x_n * mass_neutron
+	"""
 	sp = skyrme_params
 	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
 	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 0.4 * try_hbaroverm*(1.5 * math.pi * math.pi)**(2./3) * n**(5./3) * F(5./3, I)
+	term1 = 0.4 * hbaroverm*pi_multiplier * n**(5./3) * F(5./3, I)
 	term2 = 0.125 * t0 * n**(2) * (2*(x0 + 2) - (2*x0 + 1)*F(2, I))
 	term3 = ((alpha + 1)/48.) * t3 * n**(alpha + 2) * (2*(x3 + 2) - (2*x3 + 1)*F(2, I))
 	multiplicand = (t1*(x1 + 2) + t2*(x2 + 2))*F(5./3, I) + 0.5*(t2*(2*x2 + 1)-t1*(2*x1 + 1)) * F(8./3, I)
-	term4 = (1./8) * (1.5 * math.pi * math.pi)**(2./3) * n**(8./3) * multiplicand
+	term4 = (1./8) * pi_multiplier * n**(8./3) * multiplicand
 	return term1 + term2 + term3 + term4
 
 def dPdn(n):
 	I = get_I(n)
+	"""
 	x_p = 0.5 * (1-I)
 	x_n = 1 - x_p
 	n_p = n*x_p
 	n_n = n* x_n
 	real_mean_mass = x_p * mass_proton + x_n * mass_neutron
+	"""
 	sp = skyrme_params
 	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
 	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 2./3 * try_hbaroverm*(1.5 * math.pi * math.pi)**(2./3) * n**(2./3) * F(5./3, I)
+	term1 = 2./3 * hbaroverm*pi_multiplier * n**(2./3) * F(5./3, I)
 	term2 = 0.25 * t0 * n * (2*(x0 + 2) - (2*x0 + 1)*F(2, I))
 	term3 = (((alpha + 1)*(alpha+2))/48.) * t3 * n**(alpha + 1) * (2*(x3 + 2) - (2*x3 + 1)*F(2, I))
 	multiplicand = (t1*(x1 + 2) + t2*(x2 + 2))*F(5./3, I) + 0.5*(t2*(2*x2 + 1)-t1*(2*x1 + 1)) * F(8./3, I)
-	term4 = (1./3) * (1.5 * math.pi * math.pi)**(2./3) * n**(5./3) * multiplicand
+	term4 = (1./3) * pi_multiplier * n**(5./3) * multiplicand
 	return term1 + term2 + term3 + term4
 
 def get_v_adiabatic(n):
@@ -157,24 +166,14 @@ def get_v_adiabatic(n):
 		I = get_I(n)
 		x_p = 0.5 * (1-I)
 		x_n = 1 - x_p
-		n_p = n*x_p
-		n_n = n* x_n
-		real_mean_mass = x_p * mass_proton + x_n * mass_neutron
-		bot_term = amu_mass + E(n) + (P(n)/n)
+		bot_term = x_p * mass_proton + x_n * mass_neutron + E(n) + (P(n)/n)
 		ratio = (top_term/bot_term)**(0.5) 
 		return ratio * c
 	else:
 		return 0
 
 def rho(n):
-	I = get_I(n)
-	x_p = 0.5 * (1-I)
-	x_n = 1 - x_p
-	n_p = n*x_p
-	n_n = n* x_n
-	real_mean_mass = x_p * mass_proton + x_n * mass_neutron
-	energy_density = n * (amu_mass + E(n))
-	return conversion_density * energy_density
+	return conversion_density * energy_density(n)
 
 def energy_density(n):
 	I = get_I(n)
@@ -182,13 +181,13 @@ def energy_density(n):
 	x_n = 1 - x_p
 	n_p = n*x_p
 	n_n = n* x_n
-	real_mean_mass = x_p * mass_proton + x_n * mass_neutron
-	return n * (amu_mass + E(n))
+	energy_density = n*E(n) + n_p * mass_proton + n_n * mass_neutron
+	return energy_density
 
 def extract_n_pressure(Pval):
 	def desired_fn(n):
 		return P(n, no_errors = True) - Pval
-	value = scipy.optimize.brentq(desired_fn, 0, 100)
+	value = scipy.optimize.brentq(desired_fn, 0, 10)
 	return value
 
 def getrho(P):
@@ -205,7 +204,7 @@ def getPpoly(rho, gamma):
 
 def getRhoBSM(P, interp = 1.5):
 	if (P-eos_P[0] < 0.01) or (P - eos_P[-1] > -0.01):
-		raise ValueError('A very specific bad thing happened.')
+		raise ValueError('We are out of range of the BSM eos.')
 	else:
 		for i in range(len(eos_P)):
 			if abs(eos_P[i] - P) < 0.1:
@@ -253,21 +252,22 @@ def drhoPoly(r, rho, M):
 	return value
 
 def dMSkyrme(r, P, M, n):
+	surface_area = 4 * math.pi * r**(2)
+
 	try:
 		value = getrho(P)
-
 		if getrho(P) > 3*10**(14):
-			return 4 * math.pi * r**(2) * getrho(P)
+			return surface_area * getrho(P)
 		else:
 			try:
-				return 4 * math.pi * r**(2) * getRhoBSM(P)
+				return surface_area* getRhoBSM(P)
 			except: 
-				return 4 * math.pi * r**(2) * getRhoPoly(P)
+				return surface_area * getRhoPoly(P)
 	except:
 		try:
-			return 4 * math.pi * r**(2) * getRhoBSM(P)
+			return surface_area * getRhoBSM(P)
 		except:
-			return 4 * math.pi * r**(2) * getRhoPoly(P)
+			return surface_area * getRhoPoly(P)
 
 def dPSkyrme(r, P, M):
 	if P==0:
@@ -325,23 +325,26 @@ def shooting_skyrme(central_pressure):
 				lst_xn.append(xn)
 				lst_n.append(curr_n)
 
-				"""
 				adiabatic_speed = get_v_adiabatic(curr_n)
-				xdiff, ydiff, zdiff = rungeKetta(x, y, z, dPSkyrme, dMSkyrme, 0.01, gamma)
+				xdiff, ydiff, zdiff = rungeKetta(x, y, z, dPSkyrme, dMSkyrme, 0.1, gamma)
 				n_diff = extract_n_pressure(ydiff/conversion_pressure)
 				equilibrium_ratio =  (ydiff - y)/(conversion_pressure*(energy_density(n_diff) - energy_density(curr_n)))
 				if adiabatic_speed/c > 1:
-					print('oh no')
+					print(adiabatic_speed/c)
+					print('Adiabatic speed suspicious')
 				elif equilibrium_ratio > 1:
-					print('OH NO')
+					print(equilibrium_ratio)
+					print('Equilibrium speed suspicious')
 				equilibrium_speed = c * equilibrium_ratio
 				brunt = (g**(2) * ((1/equilibrium_speed)**(2) - (1/adiabatic_speed)**(2)))**(0.5)
 				lst_x_logbrunt.append(x)
 				lst_logbrunt.append(math.log(brunt, 10))
+				adiabatic_scaled = 
+				lst_speed_sound.append(adiabatic_speed)
 				if brunt < 10**(4.5):
 					lst_x_brunt.append(x)
 					lst_brunt.append(brunt)
-				"""
+
 		except Exception as e:
 			value = 2
 		if abs(y) < 4*hs and hs>(approximate_radius/10,000,000):
@@ -352,8 +355,18 @@ def shooting_skyrme(central_pressure):
 	print("Surface at: ", x/(10**(5)))
 	print("Total mass: ", z/mass_sun)
 	#return lst_n, lst_xp, lst_xe, lst_xmu, lst_xn
-	return [x/(10**(5)), z/mass_sun]
-	#return lst_x_brunt, lst_brunt, lst_x_logbrunt, lst_logbrunt
+	#return [x/(10**(5)), z/mass_sun]
+	lst_xrho = []
+	lst_rho = []
+	for i in range(len(lst_y)):
+		try:
+			curr_n = extract_n_pressure(lst_y[i]/conversion_pressure)
+			curr_rho = rho(curr_n)
+			lst_rho.append(curr_rho/(10**(15)))
+			lst_xrho.append(lst_x[i])
+		except:
+			pass
+	return lst_x_brunt, lst_brunt, lst_x_logbrunt, lst_logbrunt, lst_xrho, lst_rho
 
 def solve_equation(Y, Z, dYdx, dZdx, dYdz, dZdz):
 	a = np.array([[dYdx, dYdz], [dZdx, dZdz]])
@@ -453,11 +466,28 @@ def fitting_method_subpart_skyrme(central_pressure, surface_guess, mass_guess, f
 	Z = zin - zout
 	return Y, Z
 
-#skyrme_params = lst_params[0]
+skyrme_params = lst_params[8]
+x, brunt, x2, logbrunt, x_rho, rho = shooting_skyrme(P(lst_central_14[8]) * conversion_pressure)
+plt.plot(x, brunt, color = "dodgerblue")
+plt.xlabel('Radius (cm)')
+plt.ylabel('Brunt (s^-1)')
+plt.savefig("testing_" + names[8] + ".png")
+plt.clf()
+plt.plot(x2, logbrunt)
+plt.xlabel('Radius (cm)')
+plt.ylabel('log Brunt (s^-1)')
+plt.savefig('testing_log' + names[8] + ".png")
+plt.clf()
+plt.plot(x_rho, rho)
+plt.xlabel('Radius (cm)')
+plt.ylabel('Density (g/cm3)')
+plt.yscale('log')
+plt.savefig('testing_rho' + names[8] + ".png")
+plt.clf()
 #print(asymmetry(0.158))
 #print(get_v_adiabatic(0.158)/c)
 #print(get_mean_mass(0.158))
-#shooting_skyrme(P(lst_central_14[0]) * conversion_pressure)
+#shooting_skyrme(P(lst_central_max[0]) * conversion_pressure)
 #fitting_method_skyrme(P(lst_central_14[0]) * conversion_pressure)
 #lst_n, lst_xp, lst_xe, lst_xmu, lst_xn = shooting_skyrme(P(lst_central_max[0]) * conversion_pressure)
 ##print("I'm here")
@@ -481,7 +511,7 @@ for i in range(len(lst_params)):
 	plt.ylabel('log Brunt (s^-1)')
 	plt.savefig('core_log' + names[i] + ".png")
 	plt.clf()
-"""
+
 
 
 
@@ -505,6 +535,7 @@ diff_radii = [round(-(radii[i] - correct_radii[i]), 2) for i in range(len(radii)
 diff_mass = [round(max_mass[i] - correct_masses[i], 2) for i in range(len(radii))]
 print(diff_radii)
 print(diff_mass)
+"""
 
 def shooting_direct(central_density, f1, f2):
 	small_x= 0.00001

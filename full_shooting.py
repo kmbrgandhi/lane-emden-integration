@@ -20,14 +20,14 @@ Perform Runge ketta shooting
 def rungeKetta(x, y, z, f1, f2, hs, n):
 	k1 = f1(x, y, z) * hs
 	l1 = f2(x, y, z, n) * hs
-	k2 = f1(x + (hs/2), y + (k1/2), z + (l1/2)) * hs
-	l2 = f2(x + (hs/2), y + (k1/2), z + (l1/2), n) * hs
-	k3 = f1(x + (hs/2), y + (k2/2), z + (l2/2)) * hs
-	l3 = f2(x + (hs/2), y + (k2/2), z + (l2/2), n) * hs
+	k2 = f1(x + (hs/2.0), y + (k1/2.0), z + (l1/2.0)) * hs
+	l2 = f2(x + (hs/2.0), y + (k1/2.0), z + (l1/2.0), n) * hs
+	k3 = f1(x + (hs/2.0), y + (k2/2.0), z + (l2/2.0)) * hs
+	l3 = f2(x + (hs/2.0), y + (k2/2.0), z + (l2/2.0), n) * hs
 	k4 = f1(x + hs, y + k3, z + l3) * hs
 	l4 = f2(x + hs, y+ k3, z + l3, n) * hs
-	y = y + k1/6 + k2/3 + k3/3 + k4/6
-	z = z + l1/6 + l2/3 + l3/3 + l4/6
+	y = y + k1/6.0 + k2/3.0 + k3/3.0 + k4/6.0
+	z = z + l1/6.0 + l2/3.0 + l3/3.0 + l4/6.0
 	x = x + hs
 	return x, y, z
 
