@@ -39,7 +39,7 @@ def asymmetry(n):
 	sp = skyrme_params
 	x0, x1, x2, x3 = sp[0], sp[1], sp[2], sp[3]
 	t0, t1, t2, t3, alpha = sp[4], sp[5], sp[6], sp[7], sp[8]
-	term1 = 1./3 * hbaroverm * pi_multiplier * n**(2./3)
+	term1 = 1./3 * hbaroverm* pi_multiplier * n**(2./3)
 	term2 = -0.125 * t0 * (2 * x0 + 1) * n
 	term3 = -(1./24) * pi_multiplier * (3 * t1 * x1 - t2 * (5*x2 + 4))* n**(5./3)
 	term4 = -(1./48) * t3*(2*x3 + 1) * n**(alpha + 1)
@@ -191,7 +191,7 @@ def extract_n_pressure(Pval):
 	return value
 
 def getrho(P):
-	P_to_check = P/(conversion_pressure)
+	P_to_check = P
 	value_n = extract_n_pressure(P_to_check)
 	rho_val = rho(value_n)
 	return rho_val
@@ -218,19 +218,10 @@ def getRhoBSM(P, interp = 1.5):
 
 		index_1 = first_greater - 1
 		index_2 = first_greater
-		try:
-			# polynomial fitting
-			a_coeff = (eos_P[index_2] - eos_P[index_1])/(eos_rho[index_1]**(interp) - eos_rho[index_2]**(interp))
-			b_coeff = 0.5 * (eos_P[index_1] - a_coeff * eos_rho[index_1]**(interp) + eos_P[index_2] - a_coeff * eos_rho[index_2]**(interp))
-			return ((P - b_coeff)/a_coeff)**(1./interp)
-		except:
-			# linear interpolation
-			diff = eos_P[index_2] - eos_P[index_1]
-			weight_1 = (eos_P[index_2] - P)/diff
-			weight_2 = (P - eos_P[index_1])/diff
-			return ((weight_1 * eos_rho[index_1]) + (weight_2 * eos_rho[index_2]))
-
-
+		diff = eos_P[index_2] - eos_P[index_1]
+		weight_1 = (eos_P[index_2] - P)/diff
+		weight_2 = (P - eos_P[index_1])/diff
+		return ((weight_1 * eos_rho[index_1]) + (weight_2 * eos_rho[index_2]))
 
 
 
@@ -284,11 +275,6 @@ def dPSkyrme(r, P, M):
 	try:
 		if getrho(P) > 3*10**(14):
 			return -G* (P/c**(2) + getrho(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
-		elif getrho(P)>10**(14):
-			weight = (getrho(P) - 10**(14))/(2 * 10**(14))
-			emphasize_bsm_weight = 0.8 * weight
-			mean_density = emphasize_bsm_weight * getrho(P) + (1-emphasize_bsm_weight) * getRhoBSM(P)
-			return -G* (P/c**(2) + mean_density)* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
 		else:
 			try:
 				return -G* (P/c**(2) + getRhoBSM(P))* ((M + 4 * math.pi * r**(3) * (P/(c**(2))))/(r**(2) * (1 - ((2*G*M)/(c**(2) * r)))))
@@ -303,11 +289,6 @@ def dPSkyrme(r, P, M):
 def F(m, I):
 	return (0.5 * (1 + I)**(m) + 0.5 * (1-I)**(m))
 
-def get_n_copies(str, n):
-	if n==1:
-		return str
-	else:
-		return str + get_n_copies(str, n-1)
 
 def shooting_skyrme(central_pressure):
 	small_x = 0.00001
@@ -324,14 +305,11 @@ def shooting_skyrme(central_pressure):
 	lst_x_logbrunt= []
 	lst_x_brunt = [] 
 	lst_speed_sound = []
-	lst_eq_speed = []
 	lst_n = []
 	lst_xp = []
 	lst_xe = []
 	lst_xmu = []
 	lst_xn = []
-	lst_g = []
-	lst_rho2 = []
 	for i in range(10000):
 		x, y, z = rungeKetta(x, y, z, dPSkyrme, dMSkyrme, hs, gamma)
 		print(x)
@@ -339,21 +317,20 @@ def shooting_skyrme(central_pressure):
 		lst_y.append(y)
 		lst_z.append(z)
 		g = (z * G)/(x**(2)) 
-		lst_g.append(g**(2))
 		try:
-			curr_n = extract_n_pressure(y/conversion_pressure)
-			if rho(curr_n) > 1.6*10**(14):
+			curr_n = extract_n_pressure(y)
+			if rho(curr_n) > 10**(14):
 				xp, xe, xmu, xn = get_I(curr_n, sc = True)
-				lst_xp.append(xp*curr_n*10**(39))
-				lst_xe.append(xe*curr_n*10**(39))
-				lst_xmu.append(xmu*curr_n*10**(39))
-				lst_xn.append(xn*curr_n*10**(39))
-				lst_n.append(curr_n*10**(39))
+				lst_xp.append(xp)
+				lst_xe.append(xe)
+				lst_xmu.append(xmu)
+				lst_xn.append(xn)
+				lst_n.append(curr_n)
 
 				adiabatic_speed = get_v_adiabatic(curr_n)
-				xdiff, ydiff, zdiff = rungeKetta(x, y, z, dPSkyrme, dMSkyrme, 10, gamma)
-				n_diff = extract_n_pressure(ydiff/conversion_pressure)
-				equilibrium_ratio =  (ydiff - y)/(conversion_pressure*(energy_density(n_diff) - energy_density(curr_n)))
+				xdiff, ydiff, zdiff = rungeKetta(x, y, z, dPSkyrme, dMSkyrme, 0.1, gamma)
+				n_diff = extract_n_pressure(ydiff)
+				equilibrium_ratio =  (ydiff - y)/((energy_density(n_diff) - energy_density(curr_n)))
 				if adiabatic_speed/c > 1:
 					print(adiabatic_speed/c)
 					print('Adiabatic speed suspicious')
@@ -361,15 +338,13 @@ def shooting_skyrme(central_pressure):
 					print(equilibrium_ratio)
 					print('Equilibrium speed suspicious')
 				equilibrium_speed = c * equilibrium_ratio
-				lst_eq_speed.append(equilibrium_speed**(2))
 				brunt = (g**(2) * ((1/equilibrium_speed)**(2) - (1/adiabatic_speed)**(2)))**(0.5)
 				lst_x_logbrunt.append(x)
 				lst_logbrunt.append(math.log(brunt, 10))
-				lst_speed_sound.append(adiabatic_speed**(2))
-				lst_x_brunt.append(x)
-				lst_brunt.append(brunt**(2))
-				lst_rho2.append(rho(curr_n))
-
+				lst_speed_sound.append(adiabatic_speed)
+				if brunt < 10**(4.5):
+					lst_x_brunt.append(x)
+					lst_brunt.append(brunt)
 
 		except Exception as e:
 			value = 2
@@ -377,113 +352,30 @@ def shooting_skyrme(central_pressure):
 			hs = hs/2
 		if y<0.000001:
 			break
+		if x>10**(4):
+			break
 	#print(y)
-
 	print("Surface at: ", x/(10**(5)))
 	print("Total mass: ", z/mass_sun)
 	#return lst_n, lst_xp, lst_xe, lst_xmu, lst_xn
 	#return [x/(10**(5)), z/mass_sun]
-	lst_mass = [lst_z[i]/mass_sun for i in range(len(lst_z))]
-
-	surface = x
-	total_mass = z
-	lst_r = lst_x
-	lst_m = lst_z
-	lst_moverM = [-29.0]
-	for i in range(1, len(lst_m)):
-		lst_moverM.append(math.log(lst_m[i]/total_mass))
-	lst_P = lst_y
+	lst_xrho = []
 	lst_rho = []
-	for i in range(len(lst_P)):
+	lst_P = []
+	for i in range(len(lst_y)):
 		try:
-			val = getrho(lst_P[i])
-			if val > 3*10**(14):
-				lst_rho.append(val)
-			else:
-				lst_rho.append(getRhoBSM(lst_P[i]))
+			curr_n = extract_n_pressure(lst_y[i])
+			curr_rho = rho(curr_n)
+			lst_P.append(lst_y[i])
+			lst_rho.append(curr_rho)
+			lst_xrho.append(lst_x[i])
 		except:
-			try:
-				val = getRhoBSM(lst_P[i])
-				lst_rho.append(val)
-			except:
-				val = getRhoPoly(lst_P[i])
-				lst_rho.append(val)
-	adiabatic_exp = []
-	adiabatic_val = 0
-	for i in range(len(lst_rho)):
-		y = lst_P[i]
-		try:
-			curr_n = extract_n_pressure(y/conversion_pressure)
-			adiabatic_speed = get_v_adiabatic(curr_n)
-			adiabatic_val = adiabatic_speed * (lst_rho[i]/y)
-			adiabatic_exp.append(adiabatic_val)
-		except:
-			if i!=(len(lst_rho)-1):
-				top = lst_P[i+1] - lst_P[i-1]
-				bot = lst_rho[i+1] - lst_rho[i-1]
-				adiabatic_val = top/bot * (lst_rho[i]/y)
-				adiabatic>exp.append(adiabatic_val)
-			else:
-				adiabatic_exp.append(adiabatic_val)
-	deriv_diff = []
-	diff_val = 0
-	for i in range(len(lst_r)):
-		if i!=(len(lst_r)-1):
-			top1 = lst_P[i+1] - lst_P[i]
-			top2 = lst_rho[i+1] - lst_rho[i]
-			bot = lst_r[i+1] - lst_r[i]
-			term1 = (1./adiabatic_exp[i]) * (top1/bot) * (lst_r[i]/lst_P[i])
-			term2 = (top2/bot) * (lst_r[i]/lst_rho[i])
-			diff_val = term1 - term2
-			deriv_diff.append(diff_val)
-		else:
-			deriv_diff.append(diff_val)
-
-	lst_Rminusr = [surface - lst_x[i] for i in range(len(lst_r))]
-	print(len(lst_r))
-	print(len(lst_moverM))
-	print(len(lst_P))
-	print(len(lst_rho))
-	print(len(adiabatic_exp))
-	print(len(deriv_diff))
-	print(len(lst_Rminusr))
-	print('writing')
-	file = open('skyrme.fgong','w')
-	nl = "\n"
-	file.write("fee" + nl)
-	file.write("fi" + nl)
-	file.write("fo" + nl)
-	file.write("fum" + nl)
-	separator = " "
-	file.write(str(len(lst_r)) + separator + "15" + separator + "40" + separator + "1300" + nl)
-	empty_val = str(0.0) + separator
-	file.write(str(total_mass) + separator + str(surface) + separator + get_n_copies(empty_val, 12) + str(0.0) + nl)
-	for i in range(len(lst_r)):
-		print(i)
-		full_string = ""
-		full_string = full_string + str(lst_r[i]) + separator + str(lst_moverM[i]) + separator
-		full_string = full_string + empty_val
-		full_string = full_string + str(lst_P[i]) + separator + str(lst_rho[i]) + separator
-		full_string = full_string + get_n_copies(empty_val, 4)
-		full_string = full_string + str(adiabatic_exp[i]) + separator
-		full_string = full_string + get_n_copies(empty_val, 4)
-		full_string = full_string + str(deriv_diff[i]) + separator
-		full_string = full_string + get_n_copies(empty_val, 2)
-		full_string = full_string + str(lst_Rminusr[i]) + separator
-		full_string = full_string + get_n_copies(empty_val, 21)
-		full_string = full_string + str(0.0) + nl
-		file.write(full_string)
-	file.close()
-	return surface, total_mass, lst_r, lst_moverM, lst_P, lst_rho, adiabatic_exp, deriv_diff, lst_Rminusr
-
-def save_to_fgong(which_index, central_pressure):
-	skyrme_params = lst_params[which_index]
-	# need to add more parameters
-	x, brunt, x2, logbrunt, x_rho, rho, P= shooting_skyrme(central_pressure)
-	# saving part
-
-
-
+			pass
+	print(lst_x[:5])
+	print(lst_y[:5])
+	lst_mass = [lst_z[i]/mass_sun for i in range(len(lst_z))]
+	print(lst_mass[:5])
+	return lst_x_brunt, lst_brunt, lst_x_logbrunt, lst_logbrunt, lst_xrho, lst_rho, lst_P
 
 def solve_equation(Y, Z, dYdx, dZdx, dYdz, dZdz):
 	a = np.array([[dYdx, dYdz], [dZdx, dZdz]])
@@ -584,7 +476,7 @@ def fitting_method_subpart_skyrme(central_pressure, surface_guess, mass_guess, f
 	return Y, Z
 
 skyrme_params = lst_params[8]
-shooting_skyrme(1.36*10**(35))
+x, brunt, x2, logbrunt, x_rho, rho, P= shooting_skyrme(P(lst_central_14[8]))
 """
 plt.plot(rho, P)
 plt.yscale('log')
